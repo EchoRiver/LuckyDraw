@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>LuckyDraw Express</title>
+    <link rel="preload" href="./bg.jpg" as="image">
+    <link rel="preload" href="./san.ttf" as="font" type="font/woff2" >
+
+    <link rel="icon" href="./favicon.ico" type="image/png">
+    <script src="./vue.js"></script>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+        }
+        :focus {
+            outline: none; /* Remove the default focus outline */
+
+        }
+        @font-face {
+            font-family: 'ZhiMangXing';
+            src: url('./san.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            font-family:  "Microsoft YaHei", sans-serif;
+            margin: 0;
+            background: black;
+            background-size: cover;
+            background-repeat: no-repeat, repeat;
+        }
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.5s;
+        }
+
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+        #app{
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-image: url("./bg.jpg");
+        }
+        .reset{
+            cursor: pointer;
+        }
+        .container{
+            width: 100%;
+            flex: 1;
+        }
+        .container .title{
+            color: #fe0000;
+            font-size: 102px;
+            font-weight: bold;
+            text-align: center;
+            padding-top: 19px;
+            /*margin-top: 175px;*/
+            -webkit-text-stroke: 2px #FFEB3B; /* WebKit 浏览器（Chrome、Safari等） */
+            text-stroke: 2px #FFEB3B; /* 标准语法 */
+
+        }
+
+        .container .scroll-name {
+            color: white;
+            font-family:  "ZhiMangXing";
+            font-size: 108px;
+            text-align: center;
+            display: flex;
+            align-items: center; /* 在垂直方向上居中 */
+            justify-content: center; /* 在水平方向上居中 */
+            height: 60vh; /* 设置元素高度为视窗高度的100% */
+        }
+        .footer {
+            margin-top: auto;
+        }
+        .footer .op{
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-size: 13px;
+            margin-top: 50px;
+            margin-bottom: 10px;
+            margin-right: 71px;
+            text-align: center;
+            width: 100%;
+            display: flex;
+        }
+        .winning-list-1{
+            color: #FBC02D;
+            font-size: 25px;
+            text-align: center;
+        }
+
+        .winning-list-2{
+            color: #FBC02D;
+            font-size: 17px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        .winning-list-2 svg{
+            width: 20px;
+            height: 20px;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+
+        .winning-list {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            border-radius: 5px;
+            padding: 16px;
+            max-height:35px;
+            transition: max-height 0.5s ease-in-out;
+            font-family: "Microsoft YaHei";
+        }
+        ul{
+            display: flex;
+            flex-wrap: wrap;
+            width: 391px;
+            align-items: center;
+            text-align: left;
+
+        }
+
+        .winning-list .name li:nth-child(odd){
+            /*background-color: rgba(255, 255, 255, 0.5);*/
+        }
+        .winning-list .name-list li{
+            color:#ecf0f1;
+            font-size: 15px;
+            margin: 10px;
+            width: 102px;
+            padding: 3px;
+            border-radius: 5px;
+            list-style: none;
+            cursor: pointer;
+            /*border: 1px solid #D50000;*/
+        }
+
+        .start{
+            display: inline-block;
+            width: 150px;
+            cursor: pointer;
+            color: #E48F45;
+            text-align: center;
+            font-size: 25px;
+            font-weight: bold;
+            background: #9b2121;
+            padding: 5px;
+            border-radius: 7px;
+            border: none;
+            transition: background 0.3s ease; /* Smooth transition on hover */
+        }
+        .start:hover{
+            color: #FFEB3B;
+        }
+
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.8s;
+        }
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+        .winning-list-transition {
+            max-height: 1000px;
+        }
+        .delete-text {
+            color: red; /* Customize the delete text color */
+            cursor: pointer;
+            margin-left: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease; /* Add the transition effect */
+        }
+
+        /* Show the delete text when hovering over the list item */
+        li:hover .delete-text {
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="container">
+        <div class="title">{{title}}</div>
+        <div class="scroll-name">{{ winnerInfo }}</div>
+
+            <div class="winning-list" :class="{ 'winning-list-transition': firstPrizeNames.length > 0 || secondPrizeNames.length > 0 || thirdPrizeNames.length > 0 }">
+            <div style="background-color: rgba(0, 0, 0, 0.2);border-radius: 5px;padding: 10px;">
+                <h1 class="winning-list-1">中奖名单</h1>
+                <div class="first" style="margin-top: 10px;">
+                    <div class="winning-list-2">
+                        一等奖
+                        <svg t="1702954485756" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4669" width="200" height="200"><path d="M682.666667 21.333333c-92.437333 0-144.832 76.693333-170.666667 131.84C486.165333 98.026667 433.770667 21.333333 341.333333 21.333333c-58.816 0-106.666667 47.850667-106.666666 106.666667s47.850667 106.666667 106.666666 106.666667h341.333334c58.816 0 106.666667-47.850667 106.666666-106.666667s-47.850667-106.666667-106.666666-106.666667zM341.333333 192c-35.285333 0-64-28.714667-64-64s28.714667-64 64-64c79.893333 0 123.434667 83.712 140.864 128H341.333333z m341.333334 0h-140.928C559.061333 147.733333 602.453333 64 682.666667 64c35.285333 0 64 28.714667 64 64s-28.714667 64-64 64z" fill="#D1B43D" p-id="4670"></path><path d="M917.333333 320H106.666667v640a42.666667 42.666667 0 0 0 42.666666 42.666667h725.333334a42.666667 42.666667 0 0 0 42.666666-42.666667V320z" fill="#C94F49" p-id="4671"></path><path d="M960 192H64a42.666667 42.666667 0 0 0-42.666667 42.666667v128a42.666667 42.666667 0 0 0 42.666667 42.666666h896a42.666667 42.666667 0 0 0 42.666667-42.666666v-128a42.666667 42.666667 0 0 0-42.666667-42.666667z" fill="#E86C60" p-id="4672"></path><path d="M405.333333 192h213.333334v213.333333H405.333333z" fill="#EFD358" p-id="4673"></path><path d="M405.333333 405.333333h213.333334v597.333334H405.333333z" fill="#D1B43D" p-id="4674"></path></svg>
+                        ({{maxWinners['first']}}人):
+                    </div>
+                    <div class="name-list">
+                        <transition-group name="fade" tag="ul">
+
+                            <li v-for="(name, index) in firstPrizeNames" :key="index" @mouseenter="isDeleting = true" >
+                                {{ index + 1 }}. {{ name }}
+                                <span v-show="isDeleting" class="delete-text" @click="deleteName('first', index)">删除</span>
+                            </li>
+                        </transition-group>
+                </div>
+                </div>
+                <div class="second" style="margin-top: 10px;">
+                    <div class="winning-list-2">
+                        二等奖
+                        <svg t="1702954485756" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4669" width="200" height="200"><path d="M682.666667 21.333333c-92.437333 0-144.832 76.693333-170.666667 131.84C486.165333 98.026667 433.770667 21.333333 341.333333 21.333333c-58.816 0-106.666667 47.850667-106.666666 106.666667s47.850667 106.666667 106.666666 106.666667h341.333334c58.816 0 106.666667-47.850667 106.666666-106.666667s-47.850667-106.666667-106.666666-106.666667zM341.333333 192c-35.285333 0-64-28.714667-64-64s28.714667-64 64-64c79.893333 0 123.434667 83.712 140.864 128H341.333333z m341.333334 0h-140.928C559.061333 147.733333 602.453333 64 682.666667 64c35.285333 0 64 28.714667 64 64s-28.714667 64-64 64z" fill="#D1B43D" p-id="4670"></path><path d="M917.333333 320H106.666667v640a42.666667 42.666667 0 0 0 42.666666 42.666667h725.333334a42.666667 42.666667 0 0 0 42.666666-42.666667V320z" fill="#C94F49" p-id="4671"></path><path d="M960 192H64a42.666667 42.666667 0 0 0-42.666667 42.666667v128a42.666667 42.666667 0 0 0 42.666667 42.666666h896a42.666667 42.666667 0 0 0 42.666667-42.666666v-128a42.666667 42.666667 0 0 0-42.666667-42.666667z" fill="#E86C60" p-id="4672"></path><path d="M405.333333 192h213.333334v213.333333H405.333333z" fill="#EFD358" p-id="4673"></path><path d="M405.333333 405.333333h213.333334v597.333334H405.333333z" fill="#D1B43D" p-id="4674"></path></svg>
+                        ({{maxWinners['second']}}人):
+                    </div>
+                    <div class="name-list">
+                        <transition-group name="fade" tag="ul">
+                            <li v-for="(name, index) in secondPrizeNames" :key="index" @mouseenter="isDeleting = true" >
+                                {{ index + 1 }}. {{ name }}
+                                <span v-show="isDeleting" class="delete-text" @click="deleteName('second', index)">删除</span>
+                            </li>
+                        </transition-group>
+                    </div>
+                </div>
+                <div class="third" style="margin-top: 10px;">
+                    <div class="winning-list-2">
+                        三等奖
+                        <svg t="1702954485756" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4669" width="200" height="200"><path d="M682.666667 21.333333c-92.437333 0-144.832 76.693333-170.666667 131.84C486.165333 98.026667 433.770667 21.333333 341.333333 21.333333c-58.816 0-106.666667 47.850667-106.666666 106.666667s47.850667 106.666667 106.666666 106.666667h341.333334c58.816 0 106.666667-47.850667 106.666666-106.666667s-47.850667-106.666667-106.666666-106.666667zM341.333333 192c-35.285333 0-64-28.714667-64-64s28.714667-64 64-64c79.893333 0 123.434667 83.712 140.864 128H341.333333z m341.333334 0h-140.928C559.061333 147.733333 602.453333 64 682.666667 64c35.285333 0 64 28.714667 64 64s-28.714667 64-64 64z" fill="#D1B43D" p-id="4670"></path><path d="M917.333333 320H106.666667v640a42.666667 42.666667 0 0 0 42.666666 42.666667h725.333334a42.666667 42.666667 0 0 0 42.666666-42.666667V320z" fill="#C94F49" p-id="4671"></path><path d="M960 192H64a42.666667 42.666667 0 0 0-42.666667 42.666667v128a42.666667 42.666667 0 0 0 42.666667 42.666666h896a42.666667 42.666667 0 0 0 42.666667-42.666666v-128a42.666667 42.666667 0 0 0-42.666667-42.666667z" fill="#E86C60" p-id="4672"></path><path d="M405.333333 192h213.333334v213.333333H405.333333z" fill="#EFD358" p-id="4673"></path><path d="M405.333333 405.333333h213.333334v597.333334H405.333333z" fill="#D1B43D" p-id="4674"></path></svg>
+                        ({{maxWinners['third']}}人):
+                    </div>
+                    <div class="name-list">
+                        <transition-group name="fade" tag="ul">
+                            <li v-for="(name, index) in thirdPrizeNames" :key="index" @mouseenter="isDeleting = true" >
+                                {{ index + 1 }}. {{ name }}
+                                <span v-show="isDeleting" class="delete-text" @click="deleteName('third', index)">删除</span>
+                            </li>
+                        </transition-group>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ... -->
+
+
+    <div class="footer">
+        <div style="text-align: center; color: white;">
+            <button class="start"  @click="toggleLottery()" >{{ isRunning ? '停止' : (process ? '开始' : '结束') }}</button>
+
+        </div>
+        <div class="op">
+            <div class="reset" @click="resetLottery" >【重置 R】</div>
+        </div>
+    </div>
+    <!-- ... -->
+
+</div>
+
+<script>
+   var vue =  new Vue({
+        el: '#app',
+        data: {
+            participantsList: [
+                "顾俊伟", "马明杰", "姜师恩", "杨总", "李英",
+                "李香英", "杨美燕", "李耀青", "姜  媛", "陈阳",
+                "肖  玲", "葛翠花", "郝芳", "袁菲菲", "樊  兴",
+                "刘  雯", "王  莉", "高  丹", "韩双利", "潘稳",
+                "朱星辰", "陈  丽", "邵进玉", "蒋重阳", "石瑾",
+                "赵梦玲", "黄昭灿", "蔡尉", "曹金玉", "杨卓琳",
+                "刘雨欣", "高冬梅", "蔡仲囡", "王豆豆", "黎以兰",
+                "唐慧", "黄荣", "许红艳", "姚艳芳", "徐文研",
+                "赵月", "徐航", "徐天文", "王展鹏", "苗诗涛",
+                "杜坤", "葛定志", "陈  辉", "吴昊旻", "李晨",
+                "匡俊杰", "叶文静", "陆云燕", "宰莉敏", "王曼曼",
+                "杨迪", "常柯", "杨倩", "王若缘", "倪加鑫",
+                "蔺秀", "麦阿会", "孙玥", "丁媛", "侯吉雨",
+                "唐娇娇", "姜梦晓", "朱凯旋", "朱  敏", "孙文杰",
+                "蒋丽婷", "王敏慧", "潘彩云", "孙佳琪", "王雪",
+                "张文萱", "吴贝贝", "张荣容", "王丽瑞", "金星",
+                "徐浩", "杨晟", "孙宇庭", "曾欢", "陈洁","郭海梅",
+                "顾莉", "陈果", "颜莹露", "余建", "翟振宇",
+                "孙丽", "陆楼", "钱康（句容）", "罗自婷（句容）",
+
+            ],
+            time:100,
+            restarting: false,
+            title:'年会抽奖活动',
+            prizeOrder: ['third','second', 'first'],
+            maxWinners: {
+                first: 1,
+                second: 3,
+                third: 6
+            },
+            currentPrize: '',
+            isDeleting: false,
+            winnerInfo: '',
+            process:true,
+            isRunning: false,
+            currentPrizeDisplay: '',
+            remainingWinners: 0,
+            intervalId: null,
+            firstPrizeNames: [],
+            secondPrizeNames: [],
+            thirdPrizeNames: []
+        },
+        methods: {
+
+            setLocalStorageItem(key, value) {
+                localStorage.setItem(key, value);
+            },
+            getLocalStorageItem(key) {
+                return localStorage.getItem(key);
+            },
+            updateLocalStorageItem(key, newValue) {
+                const existingValue = this.getLocalStorageItem(key);
+                const concatenatedValue = existingValue ? existingValue + "|" + newValue : newValue;
+                this.setLocalStorageItem(key, concatenatedValue);
+            },
+            deleteName(prizeType, index) {
+                const key = prizeType.toLowerCase();
+                const prizeNames = this[key + 'PrizeNames'];
+
+                if (index >= 0 && index < prizeNames.length) {
+                    const deletedName = prizeNames.splice(index, 1)[0];
+
+                    // Update local storage
+                    const storedPrizeNames = this.getLocalStorageItem(key);
+                    const updatedPrizeNames = storedPrizeNames
+                        .split('|')
+                        .filter(name => name !== deletedName)
+                        .join('|');
+                    this.setLocalStorageItem(key, updatedPrizeNames);
+                }
+            },
+
+
+            fairRandom(min, max) {
+                return Math.floor(min + Math.random() * (max - min + 1));
+            },
+            fairLottery(participants) {
+                if (participants.length === 0) {
+                    console.error("Participants list is empty");
+                    return null;
+                }
+                const winnerIndex = this.fairRandom(0, participants.length - 1);
+                return participants[winnerIndex];
+            },
+            removeDuplicates(array1, array2) {
+                return array2.filter(item => !array1.includes(item));
+            },
+            toggleLottery() {
+                if (this.isRunning) {
+                    this.stopLottery();
+                } else {
+                    this.startLottery();
+                }
+            },
+            handleAudioEnded() {
+                const audio = document.getElementById('lotterySound');
+                if (audio.currentTime > audio.duration - 0.5) {
+                    audio.currentTime = 0; // Reset the playback time to the beginning
+                    audio.play(); // Restart the audio playback
+                }
+            },
+            playLotterySound() {
+                const audio = document.getElementById('lotterySound');
+                audio.play();
+            },
+            pauseLotterySound() {
+                const audio = document.getElementById('lotterySound');
+                audio.pause();
+            },
+            startLottery() {
+                // this.playLotterySound();
+                this.isRunning = true;
+                // Get the names of the previous winners from local storage
+                const firstPrizeWinners = this.getLocalStorageItem('first') ? this.getLocalStorageItem('first').split('|') : [];
+                const secondPrizeWinners = this.getLocalStorageItem('second') ? this.getLocalStorageItem('second').split('|') : [];
+                const thirdPrizeWinners = this.getLocalStorageItem('third') ? this.getLocalStorageItem('third').split('|') : [];
+
+                // Combine all previous winners to create an array of exclusions
+                const exclusionList = [...firstPrizeWinners, ...secondPrizeWinners, ...thirdPrizeWinners];
+
+                this.participantsList = this.removeDuplicates(exclusionList, this.participantsList);
+
+                this.intervalId = setInterval(() => {
+                    if (this.isRunning) {
+                        if (this.prizeOrder.length === 0) {
+                            this.stopLottery();
+                            return;
+                        }
+                        this.winnerInfo = this.fairLottery(this.participantsList);
+
+                    }
+                }, this.time);
+            },
+            stopLottery() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    // this.pauseLotterySound();
+                    clearInterval(this.intervalId);
+                    const storedPrizeOrder = this.getLocalStorageItem('prizeOrder');
+                    if (storedPrizeOrder) {
+                        this.prizeOrder = JSON.parse(storedPrizeOrder);
+                    }
+                    const currentPrize = this.prizeOrder[0];
+
+
+                    this.currentPrize = currentPrize;
+                    if(this[this.currentPrize + 'PrizeNames'] && this[this.currentPrize + 'PrizeNames'].length + 1 >= this.maxWinners[this.currentPrize]){
+                        this.prizeOrder.shift(); // Move to the next prize
+
+                    }
+                    if(this.currentPrize){
+                        this.updatePrizeNames(currentPrize, this.winnerInfo);
+                    }
+
+
+                }
+            },
+            getPrizeNames(prizeType) {
+                const storedPrizeNames = this.getLocalStorageItem(prizeType)
+                this[prizeType + 'PrizeNames'] = storedPrizeNames ? storedPrizeNames.split('|') : [];
+            },
+            updatePrizeNames(prizeType, winnerInfo) {
+                this[prizeType + 'PrizeNames'].push(winnerInfo);
+                this.updateLocalStorageItem(prizeType, winnerInfo);
+            },
+            resetLottery() {
+                this.clearLocalStorageItems(['first', 'second', 'third','prizeOrder']);
+                ['first', 'second', 'third'].forEach(prizeType => {
+                    this[prizeType + 'PrizeNames'] = [];
+                });
+
+                this.isRunning = false;
+                this.currentPrize = '';
+                location.reload(true);
+
+            },
+            clearLocalStorageItem(key) {
+                localStorage.removeItem(key);
+            },
+            clearLocalStorageItems(keys) {
+                keys.forEach(key => this.clearLocalStorageItem(key));
+            },
+            displayPrizeNames() {
+                ['first', 'second', 'third'].forEach(prizeType => {
+                     this.getPrizeNames(prizeType);
+                });
+            },
+        },
+       beforeDestroy() {
+           const audio = document.getElementById('lotterySound');
+           audio.removeEventListener('ended', this.handleAudioEnded);
+       },
+
+       watch: {
+           prizeOrder: {
+               handler() {
+                   this.setLocalStorageItem('prizeOrder', JSON.stringify(this.prizeOrder));
+               },
+               deep: true,
+           }
+       },
+       mounted() {
+            this.displayPrizeNames();
+
+        }
+    });
+
+
+</script>
+</body>
+</html>
